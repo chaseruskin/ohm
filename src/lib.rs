@@ -1,9 +1,12 @@
 mod ohm;
+mod band;
+mod resistance;
 
 use clif::{Cli, ErrorKind};
-use ohm::Ohm;
 use clif::cmd::{Runner, Command, FromCli};
 use crayon::Color;
+
+use crate::ohm::Ohm;
 
 pub fn go() -> u8 {
     // set-up the command-line interface

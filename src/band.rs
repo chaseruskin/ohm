@@ -21,7 +21,8 @@ pub enum Band {
     Silver
 }
 
-const BAND_ART: &str = "\u{2503}";
+/// Thick vertical line.
+const BAND_ART: &str = "\u{2503}"; 
 
 impl Display for Band {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -289,6 +290,21 @@ impl FromStr for Band {
         })
     }
 }
+
+pub const BAND_LIST: &str = "\
+Color Codes:
+    k   black       0
+    n   brown       1
+    r   red         2
+    o   orange      3
+    y   yellow      4
+    g   green       5
+    b   blue        6
+    v   violet      7
+    a   gray        8
+    w   white       9
+    d   gold
+    s   silver";
 
 #[derive(Error, Debug)]
 pub enum BandError {

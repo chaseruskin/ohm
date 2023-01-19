@@ -34,15 +34,3 @@ pub fn go() -> u8 {
 }
 
 impl Runner<()> for Ohm {}
-
-impl Command<()> for Ohm {
-    type Status = u8;
-    fn exec(&self, _: &()) -> <Self as clif::cmd::Command<()>>::Status { 
-
-        let resistance = self.compute();
-        println!("resistance: {}", resistance);
-        0
-    }
-}
-
-

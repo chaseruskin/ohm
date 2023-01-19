@@ -1,9 +1,10 @@
 use clif::Cli;
-use clif::cmd::FromCli;
+use clif::cmd::{Command, FromCli};
 use crate::resistance::Resistance;
 use clif::arg::{Flag, Positional};
 use crate::band::*;
 use std::fmt::Display;
+
 
 pub type Precision = f64;
 
@@ -28,18 +29,6 @@ impl From<Vec<Band>> for BandGroup {
     }
 }
 
-#[derive(Debug, PartialEq)]
-enum BandLength {
-    L3,
-    L4,
-    L5,
-    L6,
-}
-
-// const BAND_ART: char = '|';
-
-
-
 impl Display for BandGroup {
 
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -50,6 +39,14 @@ impl Display for BandGroup {
             Self::R6(b0, b1, b2, b3, b4, b5) => format!("-[{}{}{}{} {}{}]-", b0, b1, b2, b3, b4, b5),
         }))
     }
+}
+
+#[derive(Debug, PartialEq)]
+enum BandLength {
+    L3,
+    L4,
+    L5,
+    L6,
 }
 
 impl From<usize> for BandLength {
@@ -83,7 +80,7 @@ const MAX_CODE_LEN: BandLength = BandLength::L6;
 
 #[derive(Debug, PartialEq)]
 pub struct Ohm {
-    resistor: Resistor
+    resistor: Resistor,
 }
 
 impl Ohm {
@@ -120,24 +117,56 @@ impl Ohm {
 impl FromCli for Ohm {
 
     fn from_cli(cli: &mut Cli) -> Result<Self, clif::Error> { 
-
+        // check for 1st overall help flag
+        {
+            cli.check_help(
+                clif::Help::new()
+                    .flag(Flag::new("help").switch('h'))
+                    .quick_text(QUICK_HELP)
+                )?;
+            cli.raise_help()?;
+            cli.clear_help();
+        }
+        // check for 2nd quick color code list flag
+        {
+            cli.check_help(
+                clif::Help::new()
+                    .flag(Flag::new("list"))
+                    .quick_text(BAND_LIST)
+                )?;
+            cli.raise_help()?;
+            cli.clear_help();
+        }
+        // return to overall help flag
         cli.check_help(
             clif::Help::new()
                 .flag(Flag::new("help").switch('h'))
                 .quick_text(QUICK_HELP)
             )?;
 
+        // parse cli into `Ohm` struct
         let bands = cli.require_positional_all(Positional::new("band"))?;
         let app = Self {
             resistor: clif::Error::validate(Resistor::decode(bands.clone()))?,
         };
 
+        // verify the cli is empty
+        cli.is_empty()?;
+
         let group = BandGroup::from(bands.clone());
         println!("identification: {}", group);
 
-        // verify the cli is empty
-        cli.is_empty()?;
         Ok(app)
+    }
+}
+
+impl Command<()> for Ohm {
+    type Status = u8;
+    fn exec(&self, _: &()) -> <Self as clif::cmd::Command<()>>::Status { 
+
+        let resistance = self.compute();
+        println!("resistance: {}", resistance);
+        0
     }
 }
 
@@ -148,13 +177,11 @@ Usage:
     ohm [options] <band>...
 
 Arguments:
-    <band>...       colors in order from left to right (between 3 and 6)  
+    <band>...       colors from left to right (expects between 3 and 6)  
 
 Options:
     --help, -h      print quick help text
-    --verbose
     --list          print the possible color codes
-    --code          specify the <band> in terms of numerical code
 ";
 
 #[derive(Debug, PartialEq)]

@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 # clif = { git = "https://github.com/c-rus/clif", tag = "0.1.0", features = ["color"] }
 clif = { path = "/users/chase/develop/rust/clif", features = ["color"] }
-crayon = { git = "https://github.com/c-rus/crayon", tag = "0.1.0" }
+crayon = { path = "/users/chase/develop/rust/crayon" }
+# crayon = { git = "https://github.com/c-rus/crayon", tag = "0.1.0" }
 thiserror = "1.0"

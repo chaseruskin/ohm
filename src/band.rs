@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::fmt::Display;
 use thiserror::Error;
+use crayon::Color;
 
 use crate::ohm::Precision;
 
@@ -20,9 +21,24 @@ pub enum Band {
     Silver
 }
 
+const BAND_ART: &str = "\u{2503}";
+
 impl Display for Band {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{}", match self {
+            Self::Black     => BAND_ART.black(),
+            Self::Brown     => BAND_ART.rgb(0x96, 0x4B, 0x00),
+            Self::Red       => BAND_ART.red(),
+            Self::Orange    => BAND_ART.rgb(0xFF, 0xA5, 0x00),
+            Self::Yellow    => BAND_ART.yellow(),
+            Self::Green     => BAND_ART.green(),
+            Self::Blue      => BAND_ART.blue(),
+            Self::Violet    => BAND_ART.magenta(),
+            Self::Grey      => BAND_ART.rgb(0x80, 0x80, 0x80),
+            Self::White     => BAND_ART.white(),
+            Self::Gold      => BAND_ART.rgb(0xFF, 0xD7, 0x00),
+            Self::Silver    => BAND_ART.rgb(0xAA, 0xA9, 0xAD),
+        })
     }
 }
 
@@ -257,18 +273,18 @@ impl FromStr for Band {
 
     fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> { 
         Ok(match s.to_ascii_lowercase().as_ref() {
-            "black" => Self::Black,
-            "brown" => Self::Brown,
-            "red" => Self::Red,
-            "orange" => Self::Orange,
-            "yellow" => Self::Yellow,
-            "green" => Self::Green,
-            "blue" => Self::Blue,
-            "violet" => Self::Violet,
-            "grey" | "gray" => Self::Grey,
-            "white" => Self::White,
-            "gold" => Self::Gold,
-            "silver" => Self::Silver,
+            "k" | "black" => Self::Black,
+            "n" | "brown" => Self::Brown,
+            "r" | "red" => Self::Red,
+            "o" | "orange" => Self::Orange,
+            "y" | "yellow" => Self::Yellow,
+            "g" | "green" => Self::Green,
+            "b" | "blue" => Self::Blue,
+            "v" | "violet" => Self::Violet,
+            "a" | "grey" | "gray" => Self::Grey,
+            "w" | "white" => Self::White,
+            "d" | "gold" => Self::Gold,
+            "s" | "silver" => Self::Silver,
             _ => return Err(BandError::InvalidCode)
         })
     }
@@ -280,6 +296,6 @@ pub enum BandError {
     InvalidCode,
     #[error("color code requires 3 to 6 values but got {0}")]
     OutOfRange(usize),
-    #[error("band {1} is not allowed as a {0}")]
+    #[error("band {1:?} is not allowed as a {0}")]
     UnsupportedBand(String, Band),
 }

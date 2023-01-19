@@ -3,19 +3,83 @@ use clif::cmd::FromCli;
 use crate::resistance::Resistance;
 use clif::arg::{Flag, Positional};
 use crate::band::*;
+use std::fmt::Display;
 
 pub type Precision = f64;
 
-const LEN_3_BAND: usize = 3;
-const LEN_4_BAND: usize = 4;
-const LEN_5_BAND: usize = 5;
-const LEN_6_BAND: usize = 6;
+enum BandGroup {
+    R3(Band, Band, Band),
+    R4(Band, Band, Band, Band),
+    R5(Band, Band, Band, Band, Band),
+    R6(Band, Band, Band, Band, Band, Band),
+}
+
+impl From<Vec<Band>> for BandGroup {
+    fn from(vec: Vec<Band>) -> Self {
+        let mut vec = vec;
+        vec.reverse();
+        match vec.len() {
+            3 => Self::R3(vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap()),
+            4 => Self::R4(vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap()),
+            5 => Self::R5(vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap()),
+            6 => Self::R6(vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap()),
+            _ => panic!("unsupported band length {}", vec.len())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum BandLength {
+    L3,
+    L4,
+    L5,
+    L6,
+}
+
+// const BAND_ART: char = '|';
+
+
+
+impl Display for BandGroup {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", (match self {
+            Self::R3(b0, b1, b2) => format!("-[{}{}{}    ]-", b0, b1, b2),
+            Self::R4(b0, b1, b2, b3) => format!("-[{}{}{}  {} ]-", b0, b1, b2, b3),
+            Self::R5(b0, b1, b2, b3, b4) => format!("-[{}{}{}{} {} ]-", b0, b1, b2, b3, b4),
+            Self::R6(b0, b1, b2, b3, b4, b5) => format!("-[{}{}{}{} {}{}]-", b0, b1, b2, b3, b4, b5),
+        }))
+    }
+}
+
+impl From<usize> for BandLength {
+    fn from(f: usize) -> Self {
+        match f {
+            3 => Self::L3,
+            4 => Self::L4,
+            5 => Self::L5,
+            6 => Self::L6,
+            _ => panic!("unsupported band length {}", f)
+        }
+    }
+}
+
+impl Into<usize> for BandLength {
+    fn into(self) -> usize {
+        match self {
+            Self::L3 => 3,
+            Self::L4 => 4,
+            Self::L5 => 5,
+            Self::L6 => 6,
+        }
+    }
+}
 
 /// Minimum support number of colors for a resistor.
-const MIN_CODE_LEN: usize = LEN_3_BAND;
+const MIN_CODE_LEN: BandLength = BandLength::L3;
 
 /// Maximum number of colors for a resistor.
-const MAX_CODE_LEN: usize = LEN_6_BAND;
+const MAX_CODE_LEN: BandLength = BandLength::L6;
 
 #[derive(Debug, PartialEq)]
 pub struct Ohm {
@@ -55,7 +119,7 @@ impl Ohm {
 
 impl FromCli for Ohm {
 
-    fn from_cli<'c>(cli: &'c mut Cli<'_>) -> Result<Self, clif::Error<'c>> { 
+    fn from_cli(cli: &mut Cli) -> Result<Self, clif::Error> { 
 
         cli.check_help(
             clif::Help::new()
@@ -65,8 +129,11 @@ impl FromCli for Ohm {
 
         let bands = cli.require_positional_all(Positional::new("band"))?;
         let app = Self {
-            resistor: clif::Error::validate(Resistor::decode(bands))?,
+            resistor: clif::Error::validate(Resistor::decode(bands.clone()))?,
         };
+
+        let group = BandGroup::from(bands.clone());
+        println!("identification: {}", group);
 
         // verify the cli is empty
         cli.is_empty()?;
@@ -107,15 +174,14 @@ impl Resistor {
         vec.reverse();
         // capture the state of how many bands are specified
         let band_count = vec.len();
-        if band_count >= MIN_CODE_LEN && band_count <= MAX_CODE_LEN {
+        if band_count >= MIN_CODE_LEN.into() && band_count <= MAX_CODE_LEN.into() {
             Ok(Self { 
                 first: Digit::from_band(&vec.pop().unwrap())?,
                 second: Digit::from_band(&vec.pop().unwrap())?,
                 third: {
-                    match band_count {
-                        LEN_3_BAND | LEN_4_BAND => None,
-                        LEN_5_BAND | LEN_6_BAND => Some(Digit::from_band(&vec.pop().unwrap())?),
-                        _ => panic!("unsupported band length {}", band_count)
+                    match BandLength::from(band_count) {
+                        BandLength::L3 | BandLength::L4 => None,
+                        BandLength::L5 | BandLength::L6 => Some(Digit::from_band(&vec.pop().unwrap())?),
                     }
                 },
                 multiplier: Multiplier::from_band(&vec.pop().unwrap())?,
@@ -124,6 +190,23 @@ impl Resistor {
             })
         } else {
             Err(BandError::OutOfRange(band_count))
+        }
+    }
+
+    #[allow(dead_code)]
+    fn size(&self) -> BandLength {
+        if self.tolerance != Tolerance::Default {
+            if self.third.is_some() {
+                if self.temp_coeff.is_some() {
+                    BandLength::L6
+                } else {
+                    BandLength::L5
+                }
+            } else {
+                BandLength::L4
+            }
+        } else {
+            BandLength::L3
         }
     }
 }
@@ -150,6 +233,7 @@ mod tests {
         };
 
         assert_eq!(Ohm::calculate_raw(&r), 100.0);
+        assert_eq!(r.size(), BandLength::L3);
     }
 
     #[test]
@@ -164,6 +248,7 @@ mod tests {
         };
 
         assert_eq!(Ohm::calculate_raw(&r), 1200_000.0);
+        assert_eq!(r.size(), BandLength::L4);
     }
 
     #[test]
@@ -178,6 +263,7 @@ mod tests {
         };
 
         assert_eq!(Ohm::calculate_raw(&r), 220.0);
+        assert_eq!(r.size(), BandLength::L5);
     }
 
     #[test]
@@ -192,5 +278,6 @@ mod tests {
         };
 
         assert_eq!(Ohm::calculate_raw(&r), 274.0);
+        assert_eq!(r.size(), BandLength::L6);
     }
 }

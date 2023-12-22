@@ -6,8 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# clif = { git = "https://github.com/c-rus/clif", tag = "0.1.0", features = ["color"] }
-clif = { path = "/users/chase/develop/rust/clif", features = ["color"] }
-crayon = { path = "/users/chase/develop/rust/crayon" }
-# crayon = { git = "https://github.com/c-rus/crayon", tag = "0.1.0" }
+clif = { git = "https://github.com/c-rus/clif", tag = "0.1.4", features = ["color"] }
+crayon = { git = "https://github.com/c-rus/crayon", tag = "0.2.0" }
 thiserror = "1.0"

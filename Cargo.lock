@@ -5,6 +5,7 @@ version = 3
 [[package]]
 name = "clif"
 version = "0.1.3"
+source = "git+https://github.com/c-rus/clif?tag=0.1.4#a778149f8f5fbad83e08f494bc6d569a84184554"
 dependencies = [
  "crayon 0.1.0 (git+https://github.com/c-rus/crayon?tag=0.1.0)",
 ]
@@ -12,18 +13,19 @@ dependencies = [
 [[package]]
 name = "crayon"
 version = "0.1.0"
+source = "git+https://github.com/c-rus/crayon?tag=0.1.0#1b82749de99d517c2ba996be8c0f0c9191ae9362"
 
 [[package]]
 name = "crayon"
 version = "0.1.0"
-source = "git+https://github.com/c-rus/crayon?tag=0.1.0#1b82749de99d517c2ba996be8c0f0c9191ae9362"
+source = "git+https://github.com/c-rus/crayon?tag=0.2.0#8e9e1a015320f6e576d5b2d47c070cef40753d48"
 
 [[package]]
 name = "ohm"
 version = "0.1.0"
 dependencies = [
  "clif",
- "crayon 0.1.0",
+ "crayon 0.1.0 (git+https://github.com/c-rus/crayon?tag=0.2.0)",
  "thiserror",
 ]
 

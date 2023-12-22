@@ -189,7 +189,7 @@ impl Command<()> for Ohm {
 }
 
 const QUICK_HELP: &str = "\
-Resistor color code calculator.
+A resistor color code calculator.
 
 Usage:
     ohm [options] <band>...

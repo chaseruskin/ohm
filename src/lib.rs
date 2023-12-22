@@ -1,9 +1,9 @@
-mod ohm;
 mod band;
+mod ohm;
 mod resistance;
 
+use clif::cmd::{Command, FromCli, Runner};
 use clif::{Cli, ErrorKind};
-use clif::cmd::{Runner, Command, FromCli};
 use crayon::Color;
 
 use crate::ohm::Ohm;
@@ -20,13 +20,13 @@ pub fn go() -> u8 {
         Ok(app) => {
             std::mem::drop(cli);
             app
-        },
+        }
         Err(err) => {
             match err.kind() {
                 ErrorKind::Help => println!("{}", err),
                 _ => eprintln!("{}: {}", "error".red().bold(), err),
             }
-            return err.code()
+            return err.code();
         }
     };
     // execute the backend program

@@ -1,10 +1,9 @@
-use clif::Cli;
-use clif::cmd::{Command, FromCli};
+use crate::band::*;
 use crate::resistance::Resistance;
 use clif::arg::{Flag, Positional};
-use crate::band::*;
+use clif::cmd::{Command, FromCli};
+use clif::Cli;
 use std::fmt::Display;
-
 
 pub type Precision = f64;
 
@@ -21,23 +20,45 @@ impl From<Vec<Band>> for BandGroup {
         vec.reverse();
         match vec.len() {
             3 => Self::R3(vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap()),
-            4 => Self::R4(vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap()),
-            5 => Self::R5(vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap()),
-            6 => Self::R6(vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap(), vec.pop().unwrap()),
-            _ => panic!("unsupported band length {}", vec.len())
+            4 => Self::R4(
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+            ),
+            5 => Self::R5(
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+            ),
+            6 => Self::R6(
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+                vec.pop().unwrap(),
+            ),
+            _ => panic!("unsupported band length {}", vec.len()),
         }
     }
 }
 
 impl Display for BandGroup {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", (match self {
-            Self::R3(b0, b1, b2) => format!("-[{}{}{}    ]-", b0, b1, b2),
-            Self::R4(b0, b1, b2, b3) => format!("-[{}{}{}  {} ]-", b0, b1, b2, b3),
-            Self::R5(b0, b1, b2, b3, b4) => format!("-[{}{}{}{} {} ]-", b0, b1, b2, b3, b4),
-            Self::R6(b0, b1, b2, b3, b4, b5) => format!("-[{}{}{}{} {}{}]-", b0, b1, b2, b3, b4, b5),
-        }))
+        write!(
+            f,
+            "{}",
+            (match self {
+                Self::R3(b0, b1, b2) => format!("-[{}{}{}    ]-", b0, b1, b2),
+                Self::R4(b0, b1, b2, b3) => format!("-[{}{}{}  {} ]-", b0, b1, b2, b3),
+                Self::R5(b0, b1, b2, b3, b4) => format!("-[{}{}{}{} {} ]-", b0, b1, b2, b3, b4),
+                Self::R6(b0, b1, b2, b3, b4, b5) =>
+                    format!("-[{}{}{}{} {}{}]-", b0, b1, b2, b3, b4, b5),
+            })
+        )
     }
 }
 
@@ -56,7 +77,7 @@ impl From<usize> for BandLength {
             4 => Self::L4,
             5 => Self::L5,
             6 => Self::L6,
-            _ => panic!("unsupported band length {}", f)
+            _ => panic!("unsupported band length {}", f),
         }
     }
 }
@@ -84,12 +105,11 @@ pub struct Ohm {
 }
 
 impl Ohm {
-
     fn calculate_raw(res: &Resistor) -> Precision {
         let mut result: usize = 0;
-        // add the first digit 
+        // add the first digit
         result += <Digit as Into<u8>>::into(res.first) as usize;
-        
+
         // shift digits to the left by 1 position
         result = (result * 10) + <Digit as Into<u8>>::into(res.second) as usize;
 
@@ -115,15 +135,14 @@ impl Ohm {
 }
 
 impl FromCli for Ohm {
-
-    fn from_cli(cli: &mut Cli) -> Result<Self, clif::Error> { 
+    fn from_cli(cli: &mut Cli) -> Result<Self, clif::Error> {
         // check for 1st overall help flag
         {
             cli.check_help(
                 clif::Help::new()
                     .flag(Flag::new("help").switch('h'))
-                    .quick_text(QUICK_HELP)
-                )?;
+                    .quick_text(QUICK_HELP),
+            )?;
             cli.raise_help()?;
             cli.clear_help();
         }
@@ -132,8 +151,8 @@ impl FromCli for Ohm {
             cli.check_help(
                 clif::Help::new()
                     .flag(Flag::new("list"))
-                    .quick_text(BAND_LIST)
-                )?;
+                    .quick_text(BAND_LIST),
+            )?;
             cli.raise_help()?;
             cli.clear_help();
         }
@@ -141,8 +160,8 @@ impl FromCli for Ohm {
         cli.check_help(
             clif::Help::new()
                 .flag(Flag::new("help").switch('h'))
-                .quick_text(QUICK_HELP)
-            )?;
+                .quick_text(QUICK_HELP),
+        )?;
 
         // parse cli into `Ohm` struct
         let bands = cli.require_positional_all(Positional::new("band"))?;
@@ -154,7 +173,7 @@ impl FromCli for Ohm {
         cli.is_empty()?;
 
         let group = BandGroup::from(bands.clone());
-        println!("identification: {}", group);
+        println!("Identification: {}", group);
 
         Ok(app)
     }
@@ -162,10 +181,9 @@ impl FromCli for Ohm {
 
 impl Command<()> for Ohm {
     type Status = u8;
-    fn exec(&self, _: &()) -> <Self as clif::cmd::Command<()>>::Status { 
-
+    fn exec(&self, _: &()) -> <Self as clif::cmd::Command<()>>::Status {
         let resistance = self.compute();
-        println!("resistance: {}", resistance);
+        println!("Resistance: {}", resistance);
         0
     }
 }
@@ -202,18 +220,26 @@ impl Resistor {
         // capture the state of how many bands are specified
         let band_count = vec.len();
         if band_count >= MIN_CODE_LEN.into() && band_count <= MAX_CODE_LEN.into() {
-            Ok(Self { 
+            Ok(Self {
                 first: Digit::from_band(&vec.pop().unwrap())?,
                 second: Digit::from_band(&vec.pop().unwrap())?,
                 third: {
                     match BandLength::from(band_count) {
                         BandLength::L3 | BandLength::L4 => None,
-                        BandLength::L5 | BandLength::L6 => Some(Digit::from_band(&vec.pop().unwrap())?),
+                        BandLength::L5 | BandLength::L6 => {
+                            Some(Digit::from_band(&vec.pop().unwrap())?)
+                        }
                     }
                 },
                 multiplier: Multiplier::from_band(&vec.pop().unwrap())?,
-                tolerance: match vec.pop() { Some(b) => Tolerance::from_band(&b)?, None => Tolerance::Default },
-                temp_coeff: match vec.pop() { Some(b) => Some(TempCoeff::from_band(&b)?), None => None },
+                tolerance: match vec.pop() {
+                    Some(b) => Tolerance::from_band(&b)?,
+                    None => Tolerance::Default,
+                },
+                temp_coeff: match vec.pop() {
+                    Some(b) => Some(TempCoeff::from_band(&b)?),
+                    None => None,
+                },
             })
         } else {
             Err(BandError::OutOfRange(band_count))

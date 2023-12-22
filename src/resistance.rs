@@ -1,5 +1,5 @@
-use std::fmt::Display;
 use crate::ohm::Precision;
+use std::fmt::Display;
 
 use crate::band::TempCoeff;
 
@@ -39,17 +39,24 @@ impl Resistance {
 4-band: -[|||  | ]-
 5-band: -[|||| | ]-
 6-band: -[|||| ||]-
-*/  
+*/
 
 impl Display for Resistance {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} Ω ± {:?}% (min: {:?} Ω, max: {:?} Ω){}", self.raw, self.tol, self.minimum(), self.maximum(), {
-            if let Some(t) = self.temp {
-                String::from(" ") + &t.to_string()
-            } else {
-                String::new()
-            }
-        },
+        write!(
+            f,
+            "{:?} Ω ± {:?}% (min: {:?} Ω, max: {:?} Ω){}",
+            self.raw,
+            self.tol,
+            self.minimum(),
+            self.maximum(),
+            {
+                if let Some(t) = self.temp {
+                    String::from(" ") + &t.to_string()
+                } else {
+                    String::new()
+                }
+            },
         )
     }
 }

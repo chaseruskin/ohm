@@ -21,6 +21,25 @@ pub enum Band {
     Silver,
 }
 
+impl Band {
+    pub fn ascii(&self) -> &str {
+        match self {
+            Self::Black => "black",
+            Self::Brown => "brown",
+            Self::Red => "red",
+            Self::Orange => "orange",
+            Self::Yellow => "yellow",
+            Self::Green => "green",
+            Self::Blue => "blue",
+            Self::Violet => "violet",
+            Self::Grey => "grey",
+            Self::White => "white",
+            Self::Gold => "gold",
+            Self::Silver => "silver",
+        }
+    }
+}
+
 /// Thick vertical line.
 const BAND_ART: &str = "\u{2503}";
 

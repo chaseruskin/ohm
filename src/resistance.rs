@@ -34,13 +34,6 @@ impl Resistance {
     }
 }
 
-/*
-3-band: -[|||    ]-
-4-band: -[|||  | ]-
-5-band: -[|||| | ]-
-6-band: -[|||| ||]-
-*/
-
 impl Display for Resistance {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

@@ -8,9 +8,13 @@ use std::fmt::Display;
 pub type Precision = f64;
 
 enum BandGroup {
+    // 3-band: -[|||    ]-
     R3(Band, Band, Band),
+    // 4-band: -[|||  | ]-
     R4(Band, Band, Band, Band),
+    // 5-band: -[|||| | ]-
     R5(Band, Band, Band, Band, Band),
+    // 6-band: -[|||| ||]-
     R6(Band, Band, Band, Band, Band, Band),
 }
 
@@ -42,6 +46,38 @@ impl From<Vec<Band>> for BandGroup {
                 vec.pop().unwrap(),
             ),
             _ => panic!("unsupported band length {}", vec.len()),
+        }
+    }
+}
+
+impl BandGroup {
+    fn ascii(&self) -> String {
+        match self {
+            Self::R3(b0, b1, b2) => format!("-[{},{},{}    ]-", b0.ascii(), b1.ascii(), b2.ascii()),
+            Self::R4(b0, b1, b2, b3) => format!(
+                "-[{},{},{}  {} ]-",
+                b0.ascii(),
+                b1.ascii(),
+                b2.ascii(),
+                b3.ascii()
+            ),
+            Self::R5(b0, b1, b2, b3, b4) => format!(
+                "-[{},{},{},{} {} ]-",
+                b0.ascii(),
+                b1.ascii(),
+                b2.ascii(),
+                b3.ascii(),
+                b4.ascii()
+            ),
+            Self::R6(b0, b1, b2, b3, b4, b5) => format!(
+                "-[{},{},{},{} {},{}]-",
+                b0.ascii(),
+                b1.ascii(),
+                b2.ascii(),
+                b3.ascii(),
+                b4.ascii(),
+                b5.ascii()
+            ),
         }
     }
 }
@@ -164,6 +200,7 @@ impl FromCli for Ohm {
         )?;
 
         // parse cli into `Ohm` struct
+        let no_color = cli.check_flag(Flag::new("no-color"))?;
         let bands = cli.require_positional_all(Positional::new("band"))?;
         let app = Self {
             resistor: clif::Error::validate(Resistor::decode(bands.clone()))?,
@@ -173,7 +210,13 @@ impl FromCli for Ohm {
         cli.is_empty()?;
 
         let group = BandGroup::from(bands.clone());
-        println!("Identification: {}", group);
+        println!(
+            "Identification: {}",
+            match no_color {
+                true => group.ascii(),
+                false => group.to_string(),
+            }
+        );
 
         Ok(app)
     }
@@ -199,6 +242,7 @@ Arguments:
 
 Options:
     --help, -h      print quick help text
+    --no-color      disable color formatting
     --list          print the possible color codes
 ";
 

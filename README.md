@@ -6,6 +6,13 @@ A simple application to compute the resistance based on a resistor's sequence of
 
 Entering the sequence of colors on the resistor will display the interpreted resistor and its computed resistance in Ohms (including minimum and maximum tolerance values).
 
+```
+$ ohm n k r d --no-color
+
+Identification: -[brown,black,red  gold ]-
+Resistance: 1000.0 Ω ± 5.0% (min: 950.0 Ω, max: 1050.0 Ω)
+```
+
 ## Interface
 ```
 A resistor color code calculator.
@@ -18,6 +25,7 @@ Arguments:
 
 Options:
     --help, -h      print quick help text
+    --no-color      disable color formatting
     --list          print the possible color codes
 
 ```

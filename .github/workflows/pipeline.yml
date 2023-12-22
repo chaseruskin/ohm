@@ -1,0 +1,40 @@
+name: pipeline
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  project: ohm
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@v3
+
+      - name: Configure Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Enable Cargo caching
+        uses: Swatinem/rust-cache@v2
+
+      - name: Compile binary
+        run: cargo build --release --bin ${{ env.project }}
+
+      - name: Run tests 
+        run: cargo test
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.project }}-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            ./target/release/ohm
+            ./target/release/ohm.exe

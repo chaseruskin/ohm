@@ -13,6 +13,8 @@ Identification: -[brown,black,red  gold ]-
 Resistance: 1000.0 Ω ± 5.0% (min: 950.0 Ω, max: 1050.0 Ω)
 ```
 
+The latest binaries are available as workflow artifacts for Windows, Mac, and Linux [here](https://github.com/c-rus/ohm/actions).
+
 ## Interface
 ```
 A resistor color code calculator.

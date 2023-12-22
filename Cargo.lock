@@ -22,7 +22,7 @@ source = "git+https://github.com/c-rus/crayon?tag=0.2.0#8e9e1a015320f6e576d5b2d4
 
 [[package]]
 name = "ohm"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "clif",
  "crayon 0.1.0 (git+https://github.com/c-rus/crayon?tag=0.2.0)",

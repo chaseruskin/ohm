@@ -1,6 +1,6 @@
 # `ohm`
 
-A resistor color code calculator.
+A resistor color code calculator written in Rust.
 
 A simple application to compute the resistance based on a resistor's sequence of color bands. This program supports resistors displaying 3, 4, 5, or 6 bands.
 

@@ -203,7 +203,24 @@ impl FromCli for Ohm {
         let no_color = cli.check_flag(Flag::new("no-color"))?;
         let bands = cli.require_positional_all(Positional::new("band"))?;
         let app = Self {
-            resistor: clif::Error::validate(Resistor::decode(bands.clone()))?,
+            resistor: clif::Error::validate({
+                let result = Resistor::decode(bands.clone());
+                match result {
+                    Ok(r) => Ok(r),
+                    Err(e) => {
+                        // try to see if the bands were entered in reverse
+                        let mut rev_bands = bands.clone();
+                        rev_bands.reverse();
+                        let rev_result = Resistor::decode(rev_bands);
+                        match rev_result {
+                            // the bands were entered in reverse order
+                            Ok(_) => { Err(BandError::ReversedBandOrder(e.to_string())) },
+                            // the bands are just flat-out wrong
+                            Err(_) => Err(e)
+                        }
+                    }
+                }
+            })?,
         };
 
         // verify the cli is empty

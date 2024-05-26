@@ -1,9 +1,9 @@
 use crate::band::*;
 use crate::resistance::Resistance;
-use clif::arg::{Flag, Positional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
 use std::fmt::Display;
+
+use cliproc::{cli, proc};
+use cliproc::{Arg, Cli, Command, Help, Memory};
 
 pub type Precision = f64;
 
@@ -137,7 +137,8 @@ const MAX_CODE_LEN: BandLength = BandLength::L6;
 
 #[derive(Debug, PartialEq)]
 pub struct Ohm {
-    resistor: Resistor,
+    no_color: bool,
+    bands: Vec<Band>,
 }
 
 impl Ohm {
@@ -161,90 +162,64 @@ impl Ohm {
         }
     }
 
-    pub fn compute(&self) -> Resistance {
+    fn compute(resistor: Resistor) -> Resistance {
         Resistance::new(
-            Self::calculate_raw(&self.resistor),
-            self.resistor.tolerance.into(),
-            self.resistor.temp_coeff,
+            Self::calculate_raw(&resistor),
+            resistor.tolerance.into(),
+            resistor.temp_coeff,
         )
     }
 }
 
-impl FromCli for Ohm {
-    fn from_cli(cli: &mut Cli) -> Result<Self, clif::Error> {
+impl Command for Ohm {
+    fn interpret(cli: &mut Cli<Memory>) -> cli::Result<Self> {
         // check for 1st overall help flag
-        {
-            cli.check_help(
-                clif::Help::new()
-                    .flag(Flag::new("help").switch('h'))
-                    .quick_text(QUICK_HELP),
-            )?;
-            cli.raise_help()?;
-            cli.clear_help();
-        }
+        cli.help(Help::with(QUICK_HELP))?;
+        cli.raise_help()?;
+        cli.lower_help();
         // check for 2nd quick color code list flag
-        {
-            cli.check_help(
-                clif::Help::new()
-                    .flag(Flag::new("list"))
-                    .quick_text(BAND_LIST),
-            )?;
-            cli.raise_help()?;
-            cli.clear_help();
-        }
+        cli.help(Help::with(BAND_LIST).flag("list").switch('l'))?;
+        cli.raise_help()?;
+        cli.lower_help();
         // return to overall help flag
-        cli.check_help(
-            clif::Help::new()
-                .flag(Flag::new("help").switch('h'))
-                .quick_text(QUICK_HELP),
-        )?;
+        cli.help(Help::with(QUICK_HELP))?;
+        // interpret the command-line data into the [Ohm] struct
+        Ok(Self {
+            no_color: cli.check(Arg::flag("no-color"))?,
+            bands: cli.require_all(Arg::positional("band"))?,
+        })
+    }
 
-        // parse cli into `Ohm` struct
-        let no_color = cli.check_flag(Flag::new("no-color"))?;
-        let bands = cli.require_positional_all(Positional::new("band"))?;
-        let app = Self {
-            resistor: clif::Error::validate({
-                let result = Resistor::decode(bands.clone());
-                match result {
-                    Ok(r) => Ok(r),
-                    Err(e) => {
-                        // try to see if the bands were entered in reverse
-                        let mut rev_bands = bands.clone();
-                        rev_bands.reverse();
-                        let rev_result = Resistor::decode(rev_bands);
-                        match rev_result {
-                            // the bands were entered in reverse order
-                            Ok(_) => { Err(BandError::ReversedBandOrder(e.to_string())) },
-                            // the bands are just flat-out wrong
-                            Err(_) => Err(e)
-                        }
-                    }
+    fn execute(self) -> proc::Result {
+        let resistor = match Resistor::decode(self.bands.clone()) {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                // try to see if the bands were entered in reverse
+                let mut rev_bands = self.bands.clone();
+                rev_bands.reverse();
+                let rev_result = Resistor::decode(rev_bands);
+                match rev_result {
+                    // the bands were entered in reverse order
+                    Ok(_) => Err(BandError::ReversedBandOrder(e.to_string())),
+                    // the bands are just flat-out wrong
+                    Err(_) => Err(e),
                 }
-            })?,
-        };
+            }
+        }?;
 
-        // verify the cli is empty
-        cli.is_empty()?;
-
-        let group = BandGroup::from(bands.clone());
+        // resistor: Resistor,
+        let group = BandGroup::from(self.bands.clone());
         println!(
             "Identification: {}",
-            match no_color {
+            match self.no_color {
                 true => group.ascii(),
                 false => group.to_string(),
             }
         );
 
-        Ok(app)
-    }
-}
-
-impl Command<()> for Ohm {
-    type Status = u8;
-    fn exec(&self, _: &()) -> <Self as clif::cmd::Command<()>>::Status {
-        let resistance = self.compute();
+        let resistance = Self::compute(resistor);
         println!("Resistance: {}", resistance);
-        0
+        Ok(())
     }
 }
 
@@ -255,12 +230,12 @@ Usage:
     ohm [options] <band>...
 
 Arguments:
-    <band>...       colors from left to right (expects between 3 and 6)  
+    <band>...       colors from left to right (between 3 and 6)  
 
 Options:
-    --help, -h      print quick help text
+    --help, -h      print this help information and exit
+    --list, -l      print the set of color codes and exit
     --no-color      disable color formatting
-    --list          print the possible color codes
 ";
 
 #[derive(Debug, PartialEq)]

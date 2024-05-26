@@ -362,5 +362,5 @@ pub enum BandError {
     #[error("band {1:?} is not allowed as a {0}")]
     UnsupportedBand(String, Band),
     #[error("{0} (hint: try reversing the band order)")]
-    ReversedBandOrder(String)
+    ReversedBandOrder(String),
 }

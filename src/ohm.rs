@@ -138,7 +138,7 @@ const MAX_CODE_LEN: BandLength = BandLength::L6;
 #[derive(Debug, PartialEq)]
 pub struct Ohm {
     no_color: bool,
-    bands: Vec<Band>,
+    bands: Option<Vec<Band>>,
 }
 
 impl Ohm {
@@ -186,16 +186,23 @@ impl Command for Ohm {
         // interpret the command-line data into the [Ohm] struct
         Ok(Self {
             no_color: cli.check(Arg::flag("no-color"))?,
-            bands: cli.require_all(Arg::positional("band"))?,
+            bands: cli.get_all(Arg::positional("band"))?,
         })
     }
 
     fn execute(self) -> proc::Result {
-        let resistor = match Resistor::decode(self.bands.clone()) {
+        let bands = match self.bands {
+            Some(b) => b,
+            None => {
+                println!("{}", QUICK_HELP);
+                return Ok(());
+            }
+        };
+        let resistor = match Resistor::decode(bands.clone()) {
             Ok(r) => Ok(r),
             Err(e) => {
                 // try to see if the bands were entered in reverse
-                let mut rev_bands = self.bands.clone();
+                let mut rev_bands = bands.clone();
                 rev_bands.reverse();
                 let rev_result = Resistor::decode(rev_bands);
                 match rev_result {
@@ -208,7 +215,7 @@ impl Command for Ohm {
         }?;
 
         // resistor: Resistor,
-        let group = BandGroup::from(self.bands.clone());
+        let group = BandGroup::from(bands.clone());
         println!(
             "Identification: {}",
             match self.no_color {
@@ -299,12 +306,6 @@ impl Resistor {
         }
     }
 }
-
-// #[derive(Error, Debug)]
-// enum ResistorError {
-//     #[error("color code requires 3 to 6 values but got {0}")]
-//     OutOfRange(usize)
-// }
 
 #[cfg(test)]
 mod tests {

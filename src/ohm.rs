@@ -7,6 +7,116 @@ use cliproc::{Arg, Cli, Command, Help, Memory};
 
 pub type Precision = f64;
 
+#[derive(Debug, PartialEq)]
+pub struct Ohm {
+    no_color: bool,
+    bands: Option<Vec<Band>>,
+}
+
+impl Ohm {
+    fn calculate_raw(res: &Resistor) -> Precision {
+        let mut result: usize = 0;
+        // add the first digit
+        result += <Digit as Into<u8>>::into(res.first) as usize;
+
+        // shift digits to the left by 1 position
+        result = (result * 10) + <Digit as Into<u8>>::into(res.second) as usize;
+
+        if let Some(third) = res.third {
+            // shift digits to the left by 1 position
+            result = (result * 10) + <Digit as Into<u8>>::into(third) as usize;
+        }
+
+        let mult: i8 = res.multiplier.into();
+        match mult >= 0 {
+            true => result as Precision * 10_usize.pow(mult.abs() as u32) as Precision,
+            false => result as Precision / 10_usize.pow(mult.abs() as u32) as Precision,
+        }
+    }
+
+    fn compute(resistor: Resistor) -> Resistance {
+        Resistance::new(
+            Self::calculate_raw(&resistor),
+            resistor.tolerance.into(),
+            resistor.temp_coeff,
+        )
+    }
+}
+
+impl Command for Ohm {
+    fn interpret(cli: &mut Cli<Memory>) -> cli::Result<Self> {
+        // check for 1st overall help flag
+        cli.help(Help::with(QUICK_HELP))?;
+        cli.raise_help()?;
+        cli.lower_help();
+        // check for 2nd quick color code list flag
+        cli.help(Help::with(BAND_LIST).flag("list").switch('l'))?;
+        cli.raise_help()?;
+        cli.lower_help();
+        // return to overall help flag
+        cli.help(Help::with(QUICK_HELP))?;
+        // interpret the command-line data into the [Ohm] struct
+        Ok(Self {
+            no_color: cli.check(Arg::flag("no-color"))?,
+            bands: cli.get_all(Arg::positional("band"))?,
+        })
+    }
+
+    fn execute(self) -> proc::Result {
+        let bands = match self.bands {
+            Some(b) => b,
+            None => {
+                println!("{}", QUICK_HELP);
+                return Ok(());
+            }
+        };
+        let resistor = match Resistor::decode(bands.clone()) {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                // try to see if the bands were entered in reverse
+                let mut rev_bands = bands.clone();
+                rev_bands.reverse();
+                let rev_result = Resistor::decode(rev_bands);
+                match rev_result {
+                    // the bands were entered in reverse order
+                    Ok(_) => Err(BandError::ReversedBandOrder(e.to_string())),
+                    // the bands are just flat-out wrong
+                    Err(_) => Err(e),
+                }
+            }
+        }?;
+
+        // resistor: Resistor,
+        let group = BandGroup::from(bands.clone());
+        println!(
+            "Identification: {}",
+            match self.no_color {
+                true => group.ascii(),
+                false => group.to_string(),
+            }
+        );
+
+        let resistance = Self::compute(resistor);
+        println!("Resistance: {}", resistance);
+        Ok(())
+    }
+}
+
+const QUICK_HELP: &str = "\
+A resistor color code calculator.
+
+Usage:
+    ohm [options] <band>...
+
+Arguments:
+    <band>...       colors from left to right (between 3 and 6)  
+
+Options:
+    --help, -h      print this help information and exit
+    --list, -l      print the set of color codes and exit
+    --no-color      disable color formatting
+";
+
 enum BandGroup {
     // 3-band: -[|||    ]-
     R3(Band, Band, Band),
@@ -134,116 +244,6 @@ const MIN_CODE_LEN: BandLength = BandLength::L3;
 
 /// Maximum number of colors for a resistor.
 const MAX_CODE_LEN: BandLength = BandLength::L6;
-
-#[derive(Debug, PartialEq)]
-pub struct Ohm {
-    no_color: bool,
-    bands: Option<Vec<Band>>,
-}
-
-impl Ohm {
-    fn calculate_raw(res: &Resistor) -> Precision {
-        let mut result: usize = 0;
-        // add the first digit
-        result += <Digit as Into<u8>>::into(res.first) as usize;
-
-        // shift digits to the left by 1 position
-        result = (result * 10) + <Digit as Into<u8>>::into(res.second) as usize;
-
-        if let Some(third) = res.third {
-            // shift digits to the left by 1 position
-            result = (result * 10) + <Digit as Into<u8>>::into(third) as usize;
-        }
-
-        let mult: i8 = res.multiplier.into();
-        match mult >= 0 {
-            true => result as Precision * 10_usize.pow(mult.abs() as u32) as Precision,
-            false => result as Precision / 10_usize.pow(mult.abs() as u32) as Precision,
-        }
-    }
-
-    fn compute(resistor: Resistor) -> Resistance {
-        Resistance::new(
-            Self::calculate_raw(&resistor),
-            resistor.tolerance.into(),
-            resistor.temp_coeff,
-        )
-    }
-}
-
-impl Command for Ohm {
-    fn interpret(cli: &mut Cli<Memory>) -> cli::Result<Self> {
-        // check for 1st overall help flag
-        cli.help(Help::with(QUICK_HELP))?;
-        cli.raise_help()?;
-        cli.lower_help();
-        // check for 2nd quick color code list flag
-        cli.help(Help::with(BAND_LIST).flag("list").switch('l'))?;
-        cli.raise_help()?;
-        cli.lower_help();
-        // return to overall help flag
-        cli.help(Help::with(QUICK_HELP))?;
-        // interpret the command-line data into the [Ohm] struct
-        Ok(Self {
-            no_color: cli.check(Arg::flag("no-color"))?,
-            bands: cli.get_all(Arg::positional("band"))?,
-        })
-    }
-
-    fn execute(self) -> proc::Result {
-        let bands = match self.bands {
-            Some(b) => b,
-            None => {
-                println!("{}", QUICK_HELP);
-                return Ok(());
-            }
-        };
-        let resistor = match Resistor::decode(bands.clone()) {
-            Ok(r) => Ok(r),
-            Err(e) => {
-                // try to see if the bands were entered in reverse
-                let mut rev_bands = bands.clone();
-                rev_bands.reverse();
-                let rev_result = Resistor::decode(rev_bands);
-                match rev_result {
-                    // the bands were entered in reverse order
-                    Ok(_) => Err(BandError::ReversedBandOrder(e.to_string())),
-                    // the bands are just flat-out wrong
-                    Err(_) => Err(e),
-                }
-            }
-        }?;
-
-        // resistor: Resistor,
-        let group = BandGroup::from(bands.clone());
-        println!(
-            "Identification: {}",
-            match self.no_color {
-                true => group.ascii(),
-                false => group.to_string(),
-            }
-        );
-
-        let resistance = Self::compute(resistor);
-        println!("Resistance: {}", resistance);
-        Ok(())
-    }
-}
-
-const QUICK_HELP: &str = "\
-A resistor color code calculator.
-
-Usage:
-    ohm [options] <band>...
-
-Arguments:
-    <band>...       colors from left to right (between 3 and 6)  
-
-Options:
-    --help, -h      print this help information and exit
-    --list, -l      print the set of color codes and exit
-    --no-color      disable color formatting
-";
 
 #[derive(Debug, PartialEq)]
 struct Resistor {

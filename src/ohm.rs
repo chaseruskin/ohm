@@ -2,8 +2,8 @@ use crate::band::*;
 use crate::resistance::Resistance;
 use std::fmt::Display;
 
-use cliproc::{cli, proc};
-use cliproc::{Arg, Cli, Command, Help, Memory};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Command, Help};
 
 pub type Precision = f64;
 
@@ -58,7 +58,7 @@ impl Command for Ohm {
         // interpret the command-line data into the [Ohm] struct
         Ok(Self {
             no_color: cli.check(Arg::flag("no-color"))?,
-            bands: cli.get_all(Arg::positional("band"))?,
+            bands: cli.get_between(Arg::positional("band"), 3..=6)?,
         })
     }
 

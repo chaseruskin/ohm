@@ -4,8 +4,9 @@ version = 3
 
 [[package]]
 name = "cliproc"
-version = "1.0.0"
-source = "git+https://github.com/cdotrus/cliproc?rev=753cb7e#753cb7ead81792db1b1cd8f325816124a3dfd9ea"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5db30a718f390b81353ff484a32b6a502b641147823f151d922faf455649c252"
 dependencies = [
  "colored",
 ]
@@ -33,7 +34,7 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "ohm"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "cliproc",
  "crayon",
